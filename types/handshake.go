@@ -78,6 +78,9 @@ func NewLoginReq(streamId [2]byte, protocol uint16, username string) LoginReq {
 	}
 
 	for i, c := range username {
+		if i >= len(loginReq.Username) {
+			break
+		}
 		loginReq.Username[i] = byte(c)
 	}
 

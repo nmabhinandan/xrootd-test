@@ -20,15 +20,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := sendProtocol(con, [2]types.KXR_char{0xbe, 0xef}); err != nil {
+	if err := sendProtocol(con, [2]byte{0xbe, 0xef}); err != nil {
 		os.Exit(1)
 	}
 
-	if err := sendLogin(con, [2]types.KXR_char{0xbe, 0xef}); err != nil {
+	if err := sendLogin(con, [2]byte{0xbe, 0xef}); err != nil {
 		os.Exit(1)
 	}
 
-	//if err := sendPing(con, [2]types.KXR_char{0xbe, 0xef}); err != nil {
+	//if err := sendPing(con, [2]byte{0xbe, 0xef}); err != nil {
 	//	os.Exit(1)
 	//}
 
@@ -50,7 +50,7 @@ func sendHanshake(con net.Conn) error {
 	return nil
 }
 
-func sendProtocol(con net.Conn, streamId [2]types.KXR_char) error {
+func sendProtocol(con net.Conn, streamId [2]byte) error {
 	buf := new(bytes.Buffer)
 	data := types.NewProtocolReq(streamId, 3006)
 	binary.Write(buf, binary.BigEndian, data)
@@ -64,7 +64,7 @@ func sendProtocol(con net.Conn, streamId [2]types.KXR_char) error {
 	return nil
 }
 
-func sendLogin(con net.Conn, streamID [2]types.KXR_char) error {
+func sendLogin(con net.Conn, streamID [2]byte) error {
 	buf := new(bytes.Buffer)
 	data := types.NewLoginReq(streamID, 3007, "gopher")
 	binary.Write(buf, binary.BigEndian, data)
@@ -78,7 +78,7 @@ func sendLogin(con net.Conn, streamID [2]types.KXR_char) error {
 	return nil
 }
 
-func sendPing(con net.Conn, streamID [2]types.KXR_char) error {
+func sendPing(con net.Conn, streamID [2]byte) error {
 	buf := new(bytes.Buffer)
 	data := types.NewPingReq(streamID, 3011)
 	binary.Write(buf, binary.BigEndian, data)

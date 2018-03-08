@@ -10,6 +10,8 @@ import (
 	"xrootd-test-client/types"
 )
 
+var ClientPv []byte
+
 func main() {
 
 	con, _ := net.Dial("tcp", "localhost:9001")
@@ -17,34 +19,47 @@ func main() {
 	defer con.Close()
 
 	if err := sendHanshake(con); err != nil {
-		os.Exit(1)
+		errOut(err)
 	}
 
 	if err := sendProtocol(con, [2]byte{0xbe, 0xef}); err != nil {
-		os.Exit(1)
+		errOut(err)
 	}
 
 	if err := sendLogin(con, [2]byte{0xbe, 0xef}); err != nil {
-		os.Exit(1)
+		errOut(err)
 	}
 
 	//if err := sendPing(con, [2]byte{0xbe, 0xef}); err != nil {
-	//	os.Exit(1)
+	//	errOut(err)
 	//}
 
 	os.Exit(0)
 }
 
+func errOut(err error) {
+	fmt.Println(err)
+	os.Exit(1)
+}
+
 func sendHanshake(con net.Conn) error {
 	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.BigEndian, types.NewHandshakeReq())
-	con.Write(buf.Bytes())
-	reply := make([]byte, 4096)
-	con.Read(reply)
+	if err := binary.Write(buf, binary.BigEndian, types.NewHandshakeReq()); err != nil {
+		return err
+	}
+	if _, err := con.Write(buf.Bytes()); err != nil {
+		return err
+	}
 
-	fmt.Printf("Server Protocol Version: %d", binary.BigEndian.Uint32(reply[8:12]))
+	reply := make([]byte, 4096)
+	if _, err := con.Read(reply); err != nil {
+		return err
+	}
+	ClientPv = reply[8:12]
+
+	fmt.Printf("Server Protocol Version: %x", binary.BigEndian.Uint32(reply[8:12]))
 	fmt.Println()
-	fmt.Printf("Server Type: %d ", binary.BigEndian.Uint32(reply[12:16]))
+	fmt.Printf("Server Type: % x ", binary.BigEndian.Uint32(reply[12:16]))
 	fmt.Println()
 
 	return nil
@@ -52,13 +67,19 @@ func sendHanshake(con net.Conn) error {
 
 func sendProtocol(con net.Conn, streamId [2]byte) error {
 	buf := new(bytes.Buffer)
-	data := types.NewProtocolReq(streamId, 3006)
-	binary.Write(buf, binary.BigEndian, data)
+	data := types.NewProtocolReq(streamId, 3006, ClientPv)
+	if err := binary.Write(buf, binary.BigEndian, data); err != nil {
+		return err
+	}
 	fmt.Printf("Protocol Request: % x \n", data)
-	con.Write(buf.Bytes())
+	if _, err := con.Write(buf.Bytes()); err != nil {
+		return err
+	}
 
 	reply := make([]byte, 24)
-	con.Read(reply)
+	if _, err := con.Read(reply); err != nil {
+		return err
+	}
 	fmt.Printf("Protocol Reply: % x \n", reply)
 
 	return nil
@@ -67,12 +88,18 @@ func sendProtocol(con net.Conn, streamId [2]byte) error {
 func sendLogin(con net.Conn, streamID [2]byte) error {
 	buf := new(bytes.Buffer)
 	data := types.NewLoginReq(streamID, 3007, "gopher")
-	binary.Write(buf, binary.BigEndian, data)
+	if err := binary.Write(buf, binary.BigEndian, data); err != nil {
+		return err
+	}
 	fmt.Printf("Login Request: % x \n", data)
-	con.Write(buf.Bytes())
+	if _, err := con.Write(buf.Bytes()); err != nil {
+		return err
+	}
 
 	reply := make([]byte, 42)
-	con.Read(reply)
+	if _, err := con.Read(reply); err != nil {
+		return err
+	}
 	fmt.Printf("Login Reply: % x \n", reply)
 
 	return nil
@@ -81,12 +108,18 @@ func sendLogin(con net.Conn, streamID [2]byte) error {
 func sendPing(con net.Conn, streamID [2]byte) error {
 	buf := new(bytes.Buffer)
 	data := types.NewPingReq(streamID, 3011)
-	binary.Write(buf, binary.BigEndian, data)
+	if err := binary.Write(buf, binary.BigEndian, data); err != nil {
+		return err
+	}
 	fmt.Printf("% x \n", data)
-	con.Write(buf.Bytes())
+	if _, err := con.Write(buf.Bytes()); err != nil {
+		return err
+	}
 
 	reply := make([]byte, 4)
-	con.Read(reply)
+	if _, err := con.Read(reply); err != nil {
+		return err
+	}
 	fmt.Printf("% x \n", reply)
 
 	return nil

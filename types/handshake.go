@@ -1,6 +1,10 @@
 package types
 
-import "fmt"
+import (
+	"bytes"
+	"encoding/binary"
+	"fmt"
+)
 
 type HandshakeReq interface{}
 
@@ -17,8 +21,8 @@ func NewHandshakeReq() HandshakeReq {
 }
 
 type ClientReq struct {
-	Streamid  [2]byte
-	Requestid uint16
+	StreamId  [2]byte
+	RequestId uint16
 }
 
 type ProtocolReq struct {
@@ -29,17 +33,18 @@ type ProtocolReq struct {
 	zero     int32
 }
 
-func NewProtocolReq(streamId [2]byte, protocol uint16) ProtocolReq {
-	return ProtocolReq{
+func NewProtocolReq(streamId [2]byte, requestId uint16, clientPv []byte) ProtocolReq {
+	protoReq := ProtocolReq{
 		ClientReq: ClientReq{
-			Streamid:  streamId,
-			Requestid: protocol,
+			StreamId:  streamId,
+			RequestId: requestId,
 		},
-		Clientpv: 0,
 		Reserved: [11]byte{},
 		Options:  0,
 		zero:     0,
 	}
+	binary.Read(bytes.NewBuffer(clientPv), binary.BigEndian, &protoReq.Clientpv)
+	return protoReq
 }
 
 type LoginReq struct {
@@ -60,8 +65,8 @@ func NewLoginReq(streamId [2]byte, protocol uint16, username string) LoginReq {
 	fmt.Printf("username: % x \n", username)
 	loginReq := LoginReq{
 		ClientReq: ClientReq{
-			Streamid:  streamId,
-			Requestid: protocol,
+			StreamId:  streamId,
+			RequestId: protocol,
 		},
 		Pid:      0,
 		Reserved: 0,

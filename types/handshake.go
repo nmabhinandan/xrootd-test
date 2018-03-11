@@ -3,7 +3,6 @@ package types
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 )
 
 type HandshakeReq interface{}
@@ -29,7 +28,7 @@ type ProtocolReq struct {
 	ClientReq
 	Clientpv int32
 	Reserved [11]byte
-	Options  int32
+	Options  byte
 	zero     int32
 }
 
@@ -50,19 +49,18 @@ func NewProtocolReq(streamId [2]byte, requestId uint16, clientPv []byte) Protoco
 type LoginReq struct {
 	ClientReq
 
-	// TODO: Use Tlen as Token length
+	// TODO: Use Dlen as Token length
 	Pid      int32
 	Username [8]byte
 	Reserved byte
 	Ability  byte
 	Capver   [1]byte
 	Role     [1]byte
-	Tlen     int32
-	Token    [0]byte
+	Dlen     int32
+	//Token    [0]byte
 }
 
 func NewLoginReq(streamId [2]byte, protocol uint16, username string) LoginReq {
-	fmt.Printf("username: % x \n", username)
 	loginReq := LoginReq{
 		ClientReq: ClientReq{
 			StreamId:  streamId,
@@ -73,8 +71,8 @@ func NewLoginReq(streamId [2]byte, protocol uint16, username string) LoginReq {
 		Ability:  0x1,
 		Capver:   [1]byte{},
 		Role:     [1]byte{},
-		Tlen:     0,
-		Token:    [0]byte{},
+		Dlen:     0,
+		//Token:    [0]byte{},
 	}
 
 	for i, c := range username {
@@ -88,16 +86,20 @@ func NewLoginReq(streamId [2]byte, protocol uint16, username string) LoginReq {
 }
 
 type PingReq struct {
-	Streamid [2]byte
-	KXR_ping uint16
-	Reserved byte
-	zero     int32
+	ClientReq
+	Reserved [16]byte
+	dlen     int32
 }
 
-func NewPingReq(streamId [2]byte, KXR_ping uint16) PingReq {
-	pingReq := PingReq{}
-	pingReq.Streamid = streamId
-	pingReq.KXR_ping = KXR_ping
+func NewPingReq(streamId [2]byte, requestId uint16) PingReq {
+	pingReq := PingReq{
+		ClientReq: ClientReq{
+			StreamId:  streamId,
+			RequestId: requestId,
+		},
+		Reserved: [16]byte{},
+		dlen:     0,
+	}
 
 	return pingReq
 }

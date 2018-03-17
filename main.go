@@ -47,6 +47,21 @@ func errOut(err error) {
 	os.Exit(1)
 }
 
+func readXRootResp(con net.Conn) ([]byte, error) {
+	header := make([]byte, 8)
+	if _, err := con.Read(header); err != nil {
+		return nil, err
+	}
+
+	dlen := header[7]
+	data := make([]byte, dlen)
+	if _, err := con.Read(data); err != nil {
+		return nil, err
+	}
+
+	return append(header, data...), nil
+}
+
 func sendHanshake(con net.Conn) error {
 	buf := new(bytes.Buffer)
 	if err := binary.Write(buf, binary.BigEndian, types.NewHandshakeReq()); err != nil {
@@ -55,13 +70,15 @@ func sendHanshake(con net.Conn) error {
 	if _, err := con.Write(buf.Bytes()); err != nil {
 		return err
 	}
+	//con.SetReadDeadline(time.Now().Add(time.Second * 30))
 
-	reply := make([]byte, 4096)
-	if _, err := con.Read(reply); err != nil {
+	reply, err := readXRootResp(con)
+	if err != nil {
 		return err
 	}
-	ClientPv = reply[8:12]
 
+	//ClientPv = reply[8:12]
+	fmt.Printf("reply: % x\n", reply)
 	//fmt.Printf("Server Protocol Version: %x", binary.BigEndian.Uint32(reply[8:12]))
 	//fmt.Printf("Server Type: % x ", binary.BigEndian.Uint32(reply[12:16]))
 
@@ -80,12 +97,11 @@ func sendProtocol(con net.Conn, streamId [2]byte) error {
 	if _, err := con.Write(buf.Bytes()); err != nil {
 		return err
 	}
-
-	reply := make([]byte, 24)
-	if _, err := con.Read(reply); err != nil {
+	reply, err := readXRootResp(con)
+	if err != nil {
 		return err
 	}
-	//fmt.Printf("Protocol Reply: % x \n", reply)
+	fmt.Printf("Protocol Reply: % x \n", reply)
 
 	return nil
 }
@@ -102,11 +118,11 @@ func sendLogin(con net.Conn, streamID [2]byte) error {
 		return err
 	}
 
-	reply := make([]byte, 42)
-	if _, err := con.Read(reply); err != nil {
+	reply, err := readXRootResp(con)
+	if err != nil {
 		return err
 	}
-	//fmt.Printf("Login Reply: % x \n", reply)
+	fmt.Printf("Login Reply: % x \n", reply)
 
 	return nil
 }
@@ -124,11 +140,11 @@ func sendPing(con net.Conn, streamID [2]byte) error {
 		return err
 	}
 
-	reply := make([]byte, 8)
-	if _, err := con.Read(reply); err != nil {
+	reply, err := readXRootResp(con)
+	if err != nil {
 		return err
 	}
-	//fmt.Printf("Ping Reply: % x \n", reply)
+	fmt.Printf("Ping Reply: % x \n", reply)
 
 	return nil
 }
@@ -155,12 +171,12 @@ func sendInvalidRequest(con net.Conn, streamID [2]byte) error {
 		return err
 	}
 
-	reply := make([]byte, 8)
-	if _, err := con.Read(reply); err != nil {
+	reply, err := readXRootResp(con)
+	if err != nil {
 		return err
 	}
-	//fmt.Printf("Reply to invalid request: % x \n", reply)
-	//fmt.Printf("Error code: %d\n", binary.BigEndian.Uint16(reply[2:4]))
+	fmt.Printf("Reply to invalid request: % x \n", reply)
+	fmt.Printf("Error code: %d\n", binary.BigEndian.Uint16(reply[2:4]))
 
 	return nil
 }

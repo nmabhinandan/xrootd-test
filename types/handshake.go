@@ -7,14 +7,6 @@ import (
 
 type HandshakeReq interface{}
 
-type HanshakeResp struct {
-	Streamid [2]byte
-	Status   uint16
-	Rlen     int32
-	Pval     int32
-	Flag     int32
-}
-
 func NewHandshakeReq() HandshakeReq {
 	return [5]int32{0, 0, 0, 4, 2012}
 }
